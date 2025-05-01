@@ -1,0 +1,240 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Japanse Woordenschat Quiz</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 600px;
+            text-align: center;
+            padding: 20px;
+            background-color: #1e1e1e;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        button {
+            padding: 10px 20px;
+            margin: 15px 5px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            background-color: #03dac6;
+            color: #000;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #018786;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .option {
+            display: block;
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #2c2c2c;
+            border: 1px solid #333;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .option:hover {
+            background-color: #444;
+        }
+
+        .progress-bar {
+            width: 100%;
+            background-color: #333;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+
+        .progress {
+            height: 20px;
+            width: 0%;
+            background-color: #03dac6;
+            border-radius: 5px;
+            transition: width 0.3s;
+        }
+
+        .result {
+            font-size: 24px;
+            margin: 20px 0;
+        }
+
+        input[type="text"] {
+            width: 80%;
+            padding: 10px;
+            margin: 15px 0;
+            font-size: 16px;
+            border-radius: 5px;
+            border: 1px solid #444;
+            background-color: #2c2c2c;
+            color: #fff;
+        }
+
+        #timer {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #ccc;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="start-container">
+    <h1>Japanse Woordenschat Quiz</h1>
+    <button onclick="startQuiz('mc')">Start Meerkeuze Quiz</button>
+    <button onclick="startQuiz('open')">Start Open Antwoord Quiz</button>
+    <button onclick="showAddPage()">Voeg Nieuwe Woorden Toe</button>
+</div>
+
+<div class="container hidden" id="quiz-container">
+    <div id="timer">Tijd: 0s</div>
+    <div class="progress-bar"><div class="progress" id="progress-bar"></div></div>
+    <div id="question"></div>
+    <div id="options"></div>
+    <div id="open-answer" class="hidden">
+        <input type="text" id="open-input" placeholder="Typ je antwoord hier...">
+        <br>
+        <button onclick="submitOpenAnswer()">Verstuur</button>
+    </div>
+</div>
+
+<div class="container hidden" id="result-container">
+    <h2>Quiz Resultaat</h2>
+    <div class="result" id="score"></div>
+    <div class="result" id="time-result"></div>
+    <button onclick="restartQuiz()">Opnieuw proberen</button>
+</div>
+
+<div class="container hidden" id="add-container">
+    <h2>Nieuwe Woorden Toevoegen (in ontwikkeling)</h2>
+    <p>Deze functie komt binnenkort. Hier kan je later woorden toevoegen.</p>
+    <button onclick="goHome()">Terug naar start</button>
+</div>
+
+<script>
+    const questions = [
+        {q: "あした", a: "Morgen", o: ["sterven", "klein", "Wat"]},
+        {q: "みせ", a: "Winkel", o: ["één", "maan", "liefde"]},
+        {q: "ともだち", a: "Vriend", o: ["twee", "weer", "hond"]},
+        {q: "パン", a: "Brood", o: ["drie", "vriend", "zee"]},
+        {q: "あさ", a: "Ochtend", o: ["vier", "zomer", "station"]},
+        {q: "あたらしい", a: "Nieuw", o: ["vijf", "pop", "geld"]},
+        {q: "おもしろい", a: "Interessant", o: ["zes", "knuffel", "kersenbloesem"]},
+        {q: "ほん", a: "Boek", o: ["zeven", "kat", "zout"]},
+        {q: "きょう", a: "Vandaag", o: ["acht", "drank", "sushi"]},
+        {q: "なに", a: "Wat", o: ["negen", "eten", "leraar"]}
+    ];
+
+    let current = 0, score = 0, mode = "mc", startTime, timerInterval;
+
+    function startQuiz(selectedMode) {
+        mode = selectedMode;
+        current = 0;
+        score = 0;
+        document.getElementById("start-container").classList.add("hidden");
+        document.getElementById("quiz-container").classList.remove("hidden");
+        document.getElementById("open-answer").classList.toggle("hidden", mode !== "open");
+        startTime = Date.now();
+        timerInterval = setInterval(updateTimer, 1000);
+        showQuestion();
+    }
+
+    function showQuestion() {
+        if (current >= questions.length) {
+            finishQuiz();
+            return;
+        }
+
+        const q = questions[current];
+        document.getElementById("question").textContent = `${current + 1}. Wat betekent "${q.q}"?`;
+        document.getElementById("options").innerHTML = "";
+
+        if (mode === "mc") {
+            const options = shuffle([q.a, ...q.o]);
+            options.forEach(opt => {
+                const btn = document.createElement("button");
+                btn.className = "option";
+                btn.textContent = opt;
+                btn.onclick = () => {
+                    if (opt === q.a) score++;
+                    current++;
+                    updateProgress();
+                    showQuestion();
+                };
+                document.getElementById("options").appendChild(btn);
+            });
+        } else {
+            document.getElementById("open-input").value = "";
+        }
+    }
+
+    function submitOpenAnswer() {
+        const input = document.getElementById("open-input").value.trim();
+        if (input.toLowerCase() === questions[current].a.toLowerCase()) score++;
+        current++;
+        updateProgress();
+        showQuestion();
+    }
+
+    function updateTimer() {
+        const seconds = Math.floor((Date.now() - startTime) / 1000);
+        document.getElementById("timer").textContent = `Tijd: ${seconds}s`;
+    }
+
+    function updateProgress() {
+        const percent = (current / questions.length) * 100;
+        document.getElementById("progress-bar").style.width = percent + "%";
+    }
+
+    function finishQuiz() {
+        clearInterval(timerInterval);
+        document.getElementById("quiz-container").classList.add("hidden");
+        document.getElementById("result-container").classList.remove("hidden");
+        const timeTaken = Math.floor((Date.now() - startTime) / 1000);
+        document.getElementById("score").textContent = `Je score: ${score} / ${questions.length}`;
+        document.getElementById("time-result").textContent = `Tijd genomen: ${timeTaken} seconden`;
+    }
+
+    function restartQuiz() {
+        document.getElementById("result-container").classList.add("hidden");
+        document.getElementById("start-container").classList.remove("hidden");
+    }
+
+    function showAddPage() {
+        document.getElementById("start-container").classList.add("hidden");
+        document.getElementById("add-container").classList.remove("hidden");
+    }
+
+    function goHome() {
+        document.getElementById("add-container").classList.add("hidden");
+        document.getElementById("start-container").classList.remove("hidden");
+    }
+
+    function shuffle(arr) {
+        return arr.sort(() => Math.random() - 0.5);
+    }
+</script>
+
+</body>
+</html>
